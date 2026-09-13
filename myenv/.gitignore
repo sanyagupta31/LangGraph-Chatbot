@@ -1,0 +1,10 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+# Ignore everything in the virtual environment except the .gitignore itself
+*
+!.gitignore
+
+# Environment variables and local app data
+.env
+chatbot.db
+__pycache__/
+*.pyc
