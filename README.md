@@ -1,21 +1,26 @@
 # LangGraph Chatbot
 
-This project is a simple chatbot app built with Python, LangGraph, and Streamlit. It uses a LangGraph state graph with a SQLite checkpointer so conversations can be stored and resumed across threads.
+This project is a tool-enabled chatbot built with Python, LangGraph, and Streamlit. It uses a LangGraph state graph with a SQLite checkpointer so conversations can be stored and resumed across threads.
 
 ## Features
 
 - Chat interface built with Streamlit
-- LangGraph-based workflow for message processing
+- LangGraph workflow with conditional tool execution
+- DuckDuckGo web search
+- Stock price lookup through Alpha Vantage
+- Calculator tool for addition, subtraction, multiplication, and division
+- Streaming assistant responses with visible tool-use status
 - SQLite-backed conversation checkpointing
-- Multi-thread chat support
+- Multiple conversations with names based on the first user message
+- Optional LangSmith tracing for debugging and observability
 - New chat creation and conversation switching in the sidebar
 
 ## Project Structure
 
-- `langgraph_database_bakend.py` – backend LangGraph graph and database setup
-- `streamlit_frontend_database.py` – Streamlit frontend UI
-- `chatbot.db` – SQLite database for checkpointing
-- `.env` – environment variables such as the Groq API key
+- `langgraph_database_tools_backend.py` - backend LangGraph graph, tools, and database setup
+- `streamlit_frontend_database.py` - Streamlit frontend UI
+- `requirements.txt` - Python dependencies
+- `assets/` - application screenshots
 
 ## Requirements
 
@@ -44,35 +49,67 @@ pip install -r requirements.txt
 GROQ_API_KEY=your_api_key_here
 ```
 
+## LangSmith Tracing
+
+The app supports optional LangSmith tracing for inspecting LangGraph runs, model calls, tool calls, and errors. Add these settings to `.env` to enable it:
+
+```env
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your_langsmith_api_key_here
+LANGSMITH_PROJECT=langgraph-chatbot
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+```
+
+Restart Streamlit after changing `.env`. When tracing is disabled or the LangSmith variables are not configured, the chatbot continues to run without sending traces.
+
 ## Run the app
 
 ```bash
 streamlit run streamlit_frontend_database.py
 ```
 
-## App Preview
+## Screenshots
 
-Save the screenshot as `assets/chatbot-demo.png` and it will appear below automatically.
+### Chatbot Interface
 
 ![LangGraph Chatbot app preview](assets/chatbot-demo.png)
 
-## Memory and Thread View
+### Conversation Memory and Named Threads
 
-This project keeps chat state per thread using LangGraph checkpoints and SQLite. The sidebar allows users to switch between saved conversations and continue from the same memory context.
+The app keeps chat state per thread using LangGraph checkpoints and SQLite. Each conversation has a UUID internally, while the sidebar displays a shortened version of the first user message as its name.
 
-Save the second screenshot as `assets/chatbot-memory.png` to show the thread history and memory flow.
+![Conversation memory view](assets/chatbot-memory.png)
 
-![LangGraph chatbot memory view](assets/chatbot-memory.png)
+### Live Conversations
+
+![Live conversations](assets/livechats.png)
+
+### Stock Price Tool
+
+![Stock price tool](assets/stocklive.png)
+
+### LangSmith Tracing
+
+![LangSmith tracing](assets/langsmith.png)
+
+## Tools
+
+The model can select tools when a request needs them:
+
+- **Web search** - searches the web using DuckDuckGo.
+- **Stock prices** - retrieves the latest quote for a symbol using Alpha Vantage.
+- **Calculator** - performs `add`, `sub`, `mul`, and `div` operations and reports invalid operations or division by zero.
+
+Tool calls run through LangGraph's `ToolNode` and conditional routing. The Streamlit interface displays the active tool while the assistant response is being generated.
 
 ## Notes
 
-- The app stores chat checkpoints in the SQLite database file `chatbot.db`.
-- The virtual environment folder should be ignored by Git via the `.gitignore` file.
+- The app stores chat checkpoints locally in the SQLite database file `chatbot.db`.
+- Keep `.env`, `chatbot.db`, and the `myenv/` virtual environment local; they should not be committed to Git.
 - If you want to stop using a conversation thread, you can create a new one from the sidebar.
 
 ## Future Improvements
 
-- Better chat thread naming from the first user message
 - Conversation delete/edit actions
 - More polished Streamlit UI
 - Persistent user authentication or session management
