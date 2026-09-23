@@ -20,7 +20,6 @@ This project is a tool-enabled chatbot built with Python, LangGraph, and Streaml
 - `langgraph_database_tools_backend.py` - backend LangGraph graph, tools, and database setup
 - `streamlit_frontend_database.py` - Streamlit frontend UI
 - `requirements.txt` - Python dependencies
-- `assets/` - application screenshots
 
 ## Requirements
 
@@ -67,30 +66,6 @@ Restart Streamlit after changing `.env`. When tracing is disabled or the LangSmi
 ```bash
 streamlit run streamlit_frontend_database.py
 ```
-
-## Screenshots
-
-### Chatbot Interface
-
-![LangGraph Chatbot app preview](assets/chatbot-demo.png)
-
-### Conversation Memory and Named Threads
-
-The app keeps chat state per thread using LangGraph checkpoints and SQLite. Each conversation has a UUID internally, while the sidebar displays a shortened version of the first user message as its name.
-
-![Conversation memory view](assets/chatbot-memory.png)
-
-### Live Conversations
-
-![Live conversations](assets/livechats.png)
-
-### Stock Price Tool
-
-![Stock price tool](assets/stocklive.png)
-
-### LangSmith Tracing
-
-![LangSmith tracing](assets/langsmith.png)
 
 ## Tools
 

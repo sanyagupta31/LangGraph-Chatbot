@@ -1,6 +1,12 @@
 streamlit
 langgraph
 langchain-groq
-python-dotenv
+langchain-community
+langchain-huggingface
 langchain-core
+langchain-text-splitters
+python-dotenv
 langsmith
+faiss-cpu
+sentence-transformers
+pypdf
