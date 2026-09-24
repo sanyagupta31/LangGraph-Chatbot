@@ -10,6 +10,7 @@ This project is a LangGraph-powered chatbot built with Python, Streamlit, and RA
 - RAG search over uploaded PDF content
 - Web search using DuckDuckGo
 - Stock price lookup using Alpha Vantage
+- Simulated stock purchases with human approval
 - Calculator tool for arithmetic operations
 - SQLite-backed conversation memory across threads
 - Sidebar chat list with names generated from the first user message
@@ -75,7 +76,7 @@ streamlit run streamlit_frontend_database.py
 5. When the user asks a question about the document, the agent calls the `rag_tool` and retrieves relevant document context.
 6. The answer is generated using the retrieved context + the LLM.
 
-This makes the chatbot capable of answering questions from uploaded PDFs while still using other tools like search, calculator, and stock lookup when needed.
+This makes the chatbot capable of answering questions from uploaded PDFs while still using other tools like search, calculator, stock lookup, and stock purchase simulation when needed.
 
 ## Tools
 
@@ -84,7 +85,17 @@ The model can call tools during a chat:
 - **PDF RAG** - answers questions using the uploaded PDF content for the current thread
 - **Web search** - searches the web using DuckDuckGo
 - **Stock prices** - fetches the latest quote for a symbol using Alpha Vantage
+- **Purchase stock** - simulates purchasing a selected quantity of shares and asks for human approval before confirming
 - **Calculator** - performs `add`, `sub`, `mul`, and `div` operations
+
+### Stock purchase approval
+
+When the model calls `purchase_stock`, LangGraph pauses the workflow with an interrupt. The Streamlit interface displays the approval request and provides **Approve** and **Decline** buttons. The selected decision resumes the same conversation thread:
+
+- Approving places a simulated order and returns a success message.
+- Declining cancels the simulated order and returns a cancellation message.
+
+The purchase tool does not execute a real trade.
 
 ## Conversation Memory
 

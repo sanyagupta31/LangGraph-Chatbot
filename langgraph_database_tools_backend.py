@@ -8,7 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.vectorstores import FAISS
-from langchain_core.messages import BaseMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
 from langchain_groq import ChatGroq
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -17,6 +17,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 import requests
 from langchain_huggingface import HuggingFaceEmbeddings
+from langgraph.types import interrupt,Command
 
 
 load_dotenv()
@@ -140,7 +141,29 @@ def get_stock_price(symbol: str) -> dict:
     )
     r = requests.get(url)
     return r.json()
+@tool
+def purchase_stock(symbol:str,quantity:int)->dict:
+    """Simulate purchasing a given quantity of a stock symbol.
 
+    HUMAN-IN-THE-LOOP:
+    Before confirming the purchase, this tool will interrupt
+    and wait for a human decision ("yes" / anything else).
+    """
+    decision=interrupt(f"approved buying {quantity}shares of {symbol}?(yes/no)")
+    if isinstance(decision,str) and decision.lower()=="yes":
+        return {
+            "status":"success",
+            "message":f"Purchase order placed for {quantity} shares of {symbol}",
+            "symbol":symbol,
+            "quantity":quantity,
+        }
+    else:
+        return {
+            "status":"cancelled",
+            "message":f"purchase of {quantity} shares of {symbol} was declined by human.",
+            "symbol":symbol,
+            "quantity":quantity,
+        }
 
 @tool
 def rag_tool(query: str, thread_id: Optional[str] = None) -> dict:
@@ -167,7 +190,7 @@ def rag_tool(query: str, thread_id: Optional[str] = None) -> dict:
     }
 
 
-tools = [search_tool, get_stock_price, calculator, rag_tool]
+tools = [search_tool, get_stock_price, purchase_stock, calculator, rag_tool]
 llm_with_tools = llm.bind_tools(tools)
 
 # -------------------

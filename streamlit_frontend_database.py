@@ -2,6 +2,7 @@ import uuid
 
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langgraph.types import Command
 
 from langgraph_database_tools_backend import (
     chatbot,
@@ -54,6 +55,7 @@ def reset_chat():
     st.session_state["thread_id"] = thread_id
     add_thread(thread_id)
     st.session_state["message_history"] = []
+    st.session_state["pending_approval"] = None
 
 
 def add_thread(thread_id):
@@ -78,6 +80,9 @@ if "chat_threads" not in st.session_state:
 
 if "ingested_docs" not in st.session_state:
     st.session_state["ingested_docs"] = {}
+
+if "pending_approval" not in st.session_state:
+    st.session_state["pending_approval"] = None
 
 add_thread(st.session_state["thread_id"])
 
@@ -134,7 +139,31 @@ for message in st.session_state["message_history"]:
     with st.chat_message(message["role"]):
         st.text(message["content"])
 
-user_input = st.chat_input("Ask about your document or use tools")
+pending_approval = st.session_state["pending_approval"]
+if pending_approval:
+    st.warning(pending_approval["prompt"])
+    approval_col, decline_col = st.columns(2)
+    with approval_col:
+        approve = st.button("Approve", type="primary", use_container_width=True)
+    with decline_col:
+        decline = st.button("Decline", use_container_width=True)
+
+    if approve or decline:
+        decision = "yes" if approve else "no"
+        result = chatbot.invoke(
+            Command(resume=decision),
+            config=pending_approval["config"],
+        )
+        st.session_state["pending_approval"] = None
+        last_message = result["messages"][-1]
+        st.session_state["message_history"].append(
+            {"role": "assistant", "content": last_message.content}
+        )
+        st.rerun()
+
+user_input = None if st.session_state["pending_approval"] else st.chat_input(
+    "Ask about your document or use tools"
+)
 
 if user_input:
     st.session_state["message_history"].append({"role": "user", "content": user_input})
@@ -147,40 +176,23 @@ if user_input:
         "run_name": "chat_turn",
     }
 
+    result = chatbot.invoke(
+        {"messages": [HumanMessage(content=user_input)]},
+        config=CONFIG,
+    )
+    interrupts = result.get("__interrupt__", [])
+    if interrupts:
+        st.session_state["pending_approval"] = {
+            "prompt": interrupts[0].value,
+            "config": CONFIG,
+        }
+        st.rerun()
+
+    last_message = result["messages"][-1]
     with st.chat_message("assistant"):
-        status_holder = {"box": None}
-
-        def ai_only_stream():
-            for message_chunk, _ in chatbot.stream(
-                {"messages": [HumanMessage(content=user_input)]},
-                config=CONFIG,
-                stream_mode="messages",
-            ):
-                if isinstance(message_chunk, ToolMessage):
-                    tool_name = getattr(message_chunk, "name", "tool")
-                    if status_holder["box"] is None:
-                        status_holder["box"] = st.status(
-                            f"🔧 Using `{tool_name}` …", expanded=True
-                        )
-                    else:
-                        status_holder["box"].update(
-                            label=f"🔧 Using `{tool_name}` …",
-                            state="running",
-                            expanded=True,
-                        )
-
-                if isinstance(message_chunk, AIMessage):
-                    yield message_chunk.content
-
-        ai_message = st.write_stream(ai_only_stream())
-
-        if status_holder["box"] is not None:
-            status_holder["box"].update(
-                label="✅ Tool finished", state="complete", expanded=False
-            )
-
+        st.text(last_message.content)
     st.session_state["message_history"].append(
-        {"role": "assistant", "content": ai_message}
+        {"role": "assistant", "content": last_message.content}
     )
 
     doc_meta = thread_document_metadata(thread_key)
